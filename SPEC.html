@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOID CARTEL — Specification, User Guide &amp; Implementation Plan</title>
+<meta name="description" content="VOID CARTEL: a single-player space extraction shooter in Three.js. Physical cargo, live price boards, trade routes and contracts, plus a visual and cosmetics pass. Self-contained spec.">
+<style>
+:root{
+  --bg:#0d1017; --bg2:#141922; --bg3:#1b2230; --line:#28313f;
+  --fg:#dfe6f0; --fg2:#9fb0c6; --fg3:#6c7d94;
+  --acc:#4ade80; --acc2:#38bdf8; --warn:#fbbf24; --dan:#f87171; --pur:#a78bfa;
+  --c1:#b8c4cc; --c2:#4ade80; --c3:#38bdf8; --c4:#fbbf24;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 var(--sans);
+  -webkit-font-smoothing:antialiased}
+a{color:var(--acc2);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre{font-family:var(--mono);font-size:.88em}
+code{background:var(--bg3);border:1px solid var(--line);border-radius:4px;padding:.08em .35em;color:#cfe6ff}
+kbd{background:var(--bg3);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;
+  padding:.1em .45em;color:var(--fg);white-space:nowrap}
+pre{background:#0a0d13;border:1px solid var(--line);border-left:3px solid var(--acc2);
+  border-radius:6px;padding:.9rem 1rem;overflow:auto;line-height:1.5;color:#d7e3f4}
+pre .c{color:var(--fg3)}
+pre .k{color:var(--pur)}
+pre .s{color:var(--acc)}
+.wrap{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1500px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:22px 16px 60px;
+  border-right:1px solid var(--line);background:linear-gradient(180deg,#10151d,#0d1017)}
+nav h2{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);
+  margin:22px 0 8px;font-weight:600}
+nav h2:first-child{margin-top:0}
+nav a{display:block;padding:5px 9px;border-radius:5px;color:var(--fg2);font-size:.88rem;
+  border-left:2px solid transparent}
+nav a:hover{background:var(--bg3);color:var(--fg);text-decoration:none}
+nav a.on{color:var(--acc);border-left-color:var(--acc);background:#141d19}
+nav .brand{font:600 1.05rem/1.3 var(--mono);color:var(--fg);padding:0 9px 4px}
+nav .brand small{display:block;color:var(--fg3);font:400 .74rem/1.4 var(--sans);margin-top:4px}
+main{min-width:0;padding:34px 40px 140px}
+@media(max-width:980px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto;border-right:0;
+  border-bottom:1px solid var(--line)}main{padding:22px 18px 90px}}
+h1{font-size:1.95rem;margin:0 0 6px;letter-spacing:-.02em}
+h2{font-size:1.32rem;margin:52px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h3{font-size:1.06rem;margin:30px 0 10px;color:#e8eff8}
+h4{font-size:.95rem;margin:22px 0 8px;color:var(--fg2);text-transform:uppercase;letter-spacing:.06em}
+p{margin:.6em 0}
+ul,ol{margin:.5em 0 .9em;padding-left:1.35em}
+li{margin:.28em 0}
+li>ul,li>ol{margin:.3em 0}
+hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+.lead{color:var(--fg2);font-size:1.02rem;max-width:78ch}
+.sub{color:var(--fg3);font-size:.86rem}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 22px}
+.b{font:.74rem/1 var(--mono);padding:5px 9px;border-radius:99px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--fg2)}
+.b.ok{border-color:#2d6b47;color:var(--acc);background:#12211a}
+.b.new{border-color:#2b5b7d;color:var(--acc2);background:#101d26}
+.b.chg{border-color:#6b5a2d;color:var(--warn);background:#211c12}
+.b.lock{border-color:#5b4a7d;color:var(--pur);background:#1b1526}
+.b.del{border-color:#6b2d2d;color:var(--dan);background:#211212}
+.box{border:1px solid var(--line);border-left:3px solid var(--acc2);border-radius:6px;
+  background:var(--bg2);padding:14px 16px;margin:16px 0}
+.box.acc{border-left-color:var(--acc)}
+.box.warn{border-left-color:var(--warn)}
+.box.dan{border-left-color:var(--dan)}
+.box.pur{border-left-color:var(--pur)}
+.box h4{margin-top:0}
+.box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.9rem;display:table}
+.t-scroll{overflow-x:auto;margin:14px 0}
+.t-scroll table{margin:0;min-width:560px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--bg3);color:#eaf1fb;font-weight:600;font-size:.84rem;
+  text-transform:uppercase;letter-spacing:.05em}
+tbody tr:nth-child(even){background:#11161e}
+td code{white-space:nowrap}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.pill{font:.72rem/1 var(--mono);padding:3px 7px;border-radius:99px;border:1px solid var(--line);
+  background:var(--bg3);white-space:nowrap}
+.pill.p0{border-color:#2b5b7d;color:var(--acc2)}
+.pill.p1{border-color:#2d6b47;color:var(--acc)}
+.pill.p2{border-color:#6b5a2d;color:var(--warn)}
+.pill.p3{border-color:#5b4a7d;color:var(--pur)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin:16px 0}
+.card{border:1px solid var(--line);border-radius:6px;background:var(--bg2);padding:14px 16px}
+.card h4{margin:0 0 8px;color:var(--fg);text-transform:none;letter-spacing:0;font-size:.98rem}
+.step{border-left:2px solid var(--line);margin:10px 0;padding:2px 0 2px 14px}
+.step b{color:#eaf1fb}
+.done{color:var(--acc)}
+footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:var(--fg3);
+  font-size:.84rem}
+@media print{nav{display:none}.wrap{grid-template-columns:1fr}body{background:#fff;color:#000}
+  pre,code,.box,.card{background:#f6f7f9;color:#000}a{color:#000}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav id="toc">
+  <div class="brand">VOID CARTEL<small>Space trade &amp; combat · Three.js · spec v1.2</small></div>
+  <h2>Part I — User guide</h2>
+  <a href="#s1-1">1.1 Running the game</a>
+  <a href="#s1-2">1.2 Controls</a>
+  <a href="#s1-3">1.3 The loop</a>
+  <a href="#s1-4">1.4 Cargo hold &amp; commodities</a>
+  <a href="#s1-5">1.5 The trading network</a>
+  <a href="#s1-6">1.6 Price boards &amp; routes</a>
+  <a href="#s1-7">1.7 Contracts</a>
+  <a href="#s1-8">1.8 Modules &amp; outfitting</a>
+  <a href="#s1-9">1.9 Consumables</a>
+  <a href="#s1-10">1.10 Money, death &amp; reputation</a>
+  <a href="#s1-11">1.11 Cosmetics &amp; look</a>
+  <a href="#s1-12">1.12 HUD</a>
+  <a href="#s1-13">1.13 Combat &amp; the ladder</a>
+  <a href="#s1-14">1.14 Additions since P8 (v1.2)</a>
+  <h2>Part II — Implementation</h2>
+  <a href="#s2-1">2.1 Design laws</a>
+  <a href="#s2-2">2.2 Economy model</a>
+  <a href="#s2-3">2.3 Price model</a>
+  <a href="#s2-4">2.4 Trade terminal</a>
+  <a href="#s2-5">2.5 Repo layout</a>
+  <a href="#s2-6">2.6 Pipeline P0–P16</a>
+  <a href="#s2-7">2.7 Commit discipline</a>
+  <h2>Part III — Testing</h2>
+  <a href="#s3-1">3.1 Economy invariant gates</a>
+  <a href="#s3-2">3.2 Phase matrix</a>
+  <a href="#s3-3">3.3 Perf &amp; leak gates</a>
+  <h2>Part IV — Reference</h2>
+  <a href="#s4-1">4.1 Commodity catalog</a>
+  <a href="#s4-2">4.2 Sector demand tables</a>
+  <a href="#s4-3">4.3 Module catalog</a>
+  <a href="#s4-4">4.4 Cosmetic catalog</a>
+  <a href="#s4-5">4.5 Ship, world &amp; combat constants</a>
+  <a href="#s4-6">4.6 Enemy roster</a>
+  <a href="#s4-7">4.7 Sector ladder</a>
+  <h2>Part V — Decisions &amp; risk</h2>
+  <a href="#s5-1">5.1 Decision log</a>
+  <a href="#s5-2">5.2 Risks</a>
+  <a href="#s5-3">5.3 Glossary</a>
+  <a href="#s5-4">5.4 Sharing this spec</a>
+</nav>
+
+<main>
+
+<h1>VOID CARTEL</h1>
+<p class="lead">A single-player space game: fly a ship through a seeded sector ladder, fight, and make money by
+<strong>moving physical cargo between stations whose prices disagree</strong>. Loot fills a hold you must
+fly home. Stations run live price boards, contracts, and three market brands. Everything unbanked
+dies with you. Combat, the long ladder, and a finale boss stay the spine. A visual pass — ship kit,
+station architecture, liveries — is part of the game, not a coat of paint added later.</p>
+<div class="badges">
+  <span class="b ok">spec v1.2 — closed, no TBDs</span>
+  <span class="b">Three.js r185 · Vite · ES modules</span>
+  <span class="b">single file · no external assets</span>
+  <span class="b">target 1080p / 60 fps floor</span>
+  <span class="b new">physical cargo · boards · routes · contracts</span>
+</div>
+
+<div class="box pur">
+<h4>How to read this document</h4>
+<p><strong>Part I is the user guide.</strong> A player can read it alone and know what the game is. An
+implementer treats it as the promise the build must keep.</p>
+<p><strong>Parts II–III are the build plan and its proof</strong> — data model, formulas, pipeline, and
+the economy-invariant gates. A phase is done when its gates are green and it has been played, not
+when it compiles.</p>
+<p><strong>Parts IV–V are the numbers</strong> — every catalog, every combat and world constant, the
+decision log. This file is the only source of truth. Nothing outside it is required to build the game.</p>
+</div>
+
+<div class="box">
+<h4>What this game is, in one paragraph</h4>
+<p>You launch from a station with a finite cargo hold and a contract on the board. You shoot, mine, and
+loot <em>goods</em> — hull alloy, coolant, crystal shards — that occupy slots. Stations in different
+sectors pay different prices for the same good, so the trip home is a route decision, not a victory
+screen. Docking opens a terminal; nothing banks itself. Die, and the hold and the unbanked purse are
+gone; credits already banked, modules, reputation, and market knowledge stay. Deeper sectors pay more
+and hit harder, on a straight ladder out to 230&nbsp;000&nbsp;u, ending at a three-phase boss.</p>
+</div>
+
+<hr>
+
+<h2 id="part1">Part I — User guide</h2>
+
+<h3 id="s1-1">1.1 Running the game</h3>
+<p>One launcher at the repository root. No paid assets, no downloads. Meshes, textures, and audio are
+generated at runtime. The launcher is honest before the project is scaffolded: if <code>package.json</code>
+is missing it prints that P0 creates it and exits non-zero, instead of a raw toolchain error.</p>
+<pre><span class="c"># from the repository root (the directory that contains this file)</span>
+./launch.sh              <span class="c"># dev server (vite) and play</span>
+./launch.sh build        <span class="c"># production bundle into dist/</span>
+./launch.sh gates        <span class="c"># every gate: economy invariants + smoke + leak + perf</span>
+./launch.sh eco          <span class="c"># headless 500-trade simulation, prints invariant report</span>
+./launch.sh --seed 12345 <span class="c"># pin world, drops, and price drift</span>
+./launch.sh help</pre>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Item</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Requirements</td><td>Node ≥ 20, WebGL2. Dependencies: <code>three</code> (r185+) and <code>vite</code> only. No CDN.</td></tr>
+<tr><td>Save</td><td><code>localStorage</code> key <code>void_cartel_meta_v2</code>: banked credits, warehouse, fitted bays, owned ships, reputation, market knowledge, cosmetics, hangar upgrades. Versioned and validated on load. Corrupt JSON, NaN, or unknown ids reset that store to defaults — never crash, never migrate an unknown schema.</td></tr>
+<tr><td>Determinism</td><td><code>--seed N</code> pins world generation, drop rolls, station brands, and price drift. Same seed → same market conditions on every station, every time.</td></tr>
+<tr><td>Saves &amp; logs</td><td>The launcher prints where runtime logs go before exec. Saves stay in the browser; nothing phones home.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s1-2">1.2 Controls</h3>
+<p>Every keyboard bind uses a physical key code (<code>event.code</code> / the engine equivalent), never a
+character, so the layout is identical on AZERTY and QWERTY.</p>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Action</th><th>Bind</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Aim</td><td>mouse</td><td>Self-centering virtual stick (D12/D15): pointer pull around the crosshair commands turn rate on a 1.6 curve up to 3.2 rad/s at the edge; holding turns continuously; 2 s without input eases the rudder to neutral.</td></tr>
+<tr><td>Throttle</td><td><kbd>Wheel</kbd></td><td>0.12 per notch, eased at 3/s. Full down is a retro-burn (1.6/s).</td></tr>
+<tr><td>Fire</td><td><kbd>Mouse 0</kbd></td><td>Pulse autocannon. 10 damage, 6 shots/s, projectile 1500 u/s, life 1.6 s.</td></tr>
+<tr><td>Missiles</td><td><kbd>Mouse 2</kbd> (tap)</td><td>5-missile homing volley. 45 damage each, 300 u/s, 6 s cooldown, three salvos 0.5 s apart.</td></tr>
+<tr><td>IEM burst</td><td><kbd>Mouse 1</kbd></td><td>160 u radius, 60 damage, then 5 s shutdown.</td></tr>
+<tr><td>Turret mode</td><td><kbd>G</kbd></td><td>Camera lifts; cursor ray aims a point 400 u out.</td></tr>
+<tr><td>Roll</td><td><kbd>Q</kbd> / <kbd>E</kbd></td><td>2.8 rad/s flourish. Does not change heading.</td></tr>
+<tr><td>Boost</td><td><kbd>Shift</kbd></td><td>×2 speed for 4.5 s, 8 s cooldown. Extra charges come from the ship or a Fuel Rod.</td></tr>
+<tr><td>Trade terminal</td><td><kbd>H</kbd> inside a station bubble (120 u)</td><td>Pauses. Opens the four-panel terminal (D16: SELL / BUY / EQUIP / SHIP) with the mouse released — the header states "press ESC to free the mouse cursor"; ESC closes. Banking is a button inside it — docking never auto-banks. Inside the bubble you are also shielded: hostiles ignore the ship.</td></tr>
+<tr><td>Hull Patch / Shield Cell</td><td><kbd>Digit1</kbd> / <kbd>Digit2</kbd></td><td>Consumables drawn from the hold, usable in flight (§1.9).</td></tr>
+<tr><td>Log / pause</td><td><kbd>P</kbd></td><td>Pause menu (D13): freezes the sim, shows all indicators and this key map. The knowledge log lives in the trade terminal; <kbd>Tab</kbd> is zone-navigation inside it.</td></tr>
+<tr><td>Relaunch</td><td><kbd>R</kbd> after death</td><td>Re-spawn with the §1.10 forfeit already applied.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s1-3">1.3 The loop</h3>
+<div class="box acc">
+<p><strong>60 seconds:</strong> launch from the home station with 40 cargo slots and one contract on the board:
+<em>Deliver 6 coolant gel to Kestrel Relay — 1.6× that station's posted price, plus reputation.</em>
+Sweep the Belt: shoot containers, mine crystals, kill a frigate. Loot is physical — it fills the hold,
+and at 36/40 you feel it. Home is close but coolant is cheap there. The Crystal Fields station two
+sectors out pays far more and sits past a Void full of rammer packs. You take the haul. Dock at
+Kestrel: the board reads coolant 214 against the 68 you remember from home. Sell, bank, pick up a
+second contract, buy a Warp Injector, install it in bay 2. Die on the way out and <strong>everything
+not banked is gone</strong>. The map is a risk curve. The hold is full of reasons to push it.</p>
+</div>
+<ul>
+<li><strong>The return trip is the game.</strong> Deeper sectors pay more. Getting the goods home is where
+you spend the risk you took. There is no automatic conversion of a pickup into money.</li>
+<li><strong>Trade is a layer, not a menu.</strong> Route, market brand, contract, and hold management are
+four decisions per run, on top of the fighting.</li>
+<li><strong>Combat feeds the economy.</strong> Kills drop goods, breakables bias toward specific commodities,
+golden drones are walking bounties. The loot is goods worth carrying, not a score.</li>
+</ul>
+
+<h3 id="s1-4">1.4 Cargo hold &amp; commodities</h3>
+<ul>
+<li><strong>Physical hold.</strong> Pickups fly into a manifest: 12 commodity types, scrap clusters, and
+consumables. Commodities stack up to the cap in §4.1; scrap stacks as one block. Base capacity is
+<strong>40 slots</strong>. The Cargo Pods hangar upgrade adds 15 per level, three levels, so 55 / 70 / 90.
+A full hold rejects the pickup with a HUD nudge — <em>return to market</em> — and never deletes it
+silently.</li>
+<li><strong>Goods are not power.</strong> Nothing in the hold changes hull, shield, damage, or speed.
+Power comes from fitted module bays and hangar upgrades (§1.8, §4.5). Selling a good never makes the
+ship weaker, which is what keeps selling alive.</li>
+<li><strong>Each commodity has a pickup mesh and a tier color</strong> (common <code>#b8c4cc</code>,
+uncommon <code>#4ade80</code>, rare <code>#38bdf8</code>, exotic <code>#fbbf24</code>). The log tracks
+<em>market knowledge</em> — best price seen per commodity — not a stamp count.</li>
+<li><strong>Scrap clusters</strong> are field currency. They stack freely as one hold block and become
+spendable credits only when banked at a station (§1.10).</li>
+</ul>
+
+<h3 id="s1-5">1.5 The trading network</h3>
+<p>Stations are not identical vending machines. Each is one of <strong>three brands</strong>, placed
+deterministically by the sector generator. Every content sector still has its guaranteed midpoint
+station.</p>
+<div class="grid2">
+<div class="card">
+<h4>RELIANCE depots <span class="pill p0">logistics</span></h4>
+<p class="sub">White prefab boxes, green docking lights.</p>
+<ul>
+<li><strong>Buys every legal commodity</strong> at 90% of board. Refuses contraband.</li>
+<li>Full repair, banking, module shop, consumables.</li>
+<li>The reliable cash-out. Never the best price. Never a dead end.</li>
+</ul>
+</div>
+<div class="card">
+<h4>KESTREL exchanges <span class="pill p1">market</span></h4>
+<p class="sub">Ring-truss platforms, amber signage, docking arms, a readable price-tower hologram.</p>
+<ul>
+<li><strong>True board:</strong> buys at 100% of local value, sells at 130%.</li>
+<li><strong>Contracts:</strong> always three offers (§1.7).</li>
+<li>Reputation perks apply here: discounts, exotic module stock.</li>
+<li>Refuses contraband.</li>
+</ul>
+</div>
+<div class="card">
+<h4>MIDNIGHT DOCKS <span class="pill p2">gray</span></h4>
+<p class="sub">Unmarked hulls, red running lights, one airlock too many.</p>
+<ul>
+<li><strong>Buys anything.</strong> No contract board. +10% on contraband (Void Relic, Warden Shard, and goods flagged stolen from kills).</li>
+<li>Sells <strong>bootleg modules</strong>: four curated modules, 20% cheaper, each with a named drawback.</li>
+<li>Repair costs +25%, shown on the receipt.</li>
+</ul>
+</div>
+</div>
+<p class="sub">Brand is visible on the nav ring before you commit. You always know which kind of market you are
+flying toward. That is the route decision.</p>
+
+<h3 id="s1-6">1.6 Price boards &amp; routes</h3>
+<ul>
+<li><strong>Every Kestrel board, every sector.</strong> Price = commodity base × that sector's demand
+factor × a seeded slow drift (§2.3, ±15%, a new sample every 90 s of game time). Demand is a real
+table (§4.2): coolant is cheap where it is made and dear where reactors cook; crystal shards are
+dirt-cheap in the Crystal Fields and expensive in the Belt.</li>
+<li><strong>Routes are the meta-game.</strong> The tables produce canonical runs: Belt alloy into the
+Forge; Crystal Fields shards into the Belt; Plasma coolant back toward home. §3.1 proves at least
+three routes clear 25% net after a round trip. Arbitrage is a pass/fail line, not a vibe.</li>
+<li><strong>Market knowledge.</strong> Visiting a station records prices for commodities you have seen.
+The nav ring shows a delta against your last reading. The Trade Ledger module upgrades this to live
+remote quotes. Knowledge survives death — it is in your head, not your hold.</li>
+</ul>
+
+<h3 id="s1-7">1.7 Contracts</h3>
+<ul>
+<li>Every Kestrel visit posts <strong>three offers</strong>, seeded: deliver N of a commodity to station
+X for a <strong>1.4–1.7×</strong> multiplier on the destination's sell price, plus trade reputation.
+The multiplier is rolled per offer; higher reputation rolls higher. Deadlines are distance-based: at
+least 1.6× the flight time at 80% throttle. Never a reflex test.</li>
+<li>Accepting writes the contract into the hold manifest. Delivery pays automatically on docking the
+destination. You still fly the trip. Declined offers refresh on the next visit, not on a reload.</li>
+<li>Higher reputation unlocks larger contracts and deeper destinations. A contract is the reason to
+visit a sector you would otherwise skip.</li>
+<li>Completing a contract also gives that station's brand a small standing bump: prices there warm by
+up to 6% for 10 minutes (§2.3).</li>
+</ul>
+
+<h3 id="s1-8">1.8 Modules &amp; outfitting</h3>
+<p>Ship power, with no hidden consumption and no passive buff from a hoard:</p>
+<ul>
+<li><strong>Modules are permanent purchases</strong> stored in a warehouse. Installing moves one into
+one of <strong>three bays</strong>. Swapping at any station is free and never destroys a unit. Uninstall
+returns the module to the warehouse.</li>
+<li><strong>Buffs come only from fitted bays.</strong> Warehouse stock does nothing. A module you are
+not flying does not change a stat.</li>
+<li><strong>Three honest states.</strong> Hold = market goods. Bays = the ship's power. Warehouse = the
+portfolio. The HUD shows all three separately (§1.12).</li>
+<li>Ten modules (§4.3). Rare and exotic stock at Kestrel (reputation-gated) and, as bootlegs, at
+Midnight Docks.</li>
+</ul>
+
+<h3 id="s1-9">1.9 Consumables</h3>
+<p>Field items that occupy cargo slots, so a repair kit costs market space:</p>
+<ul>
+<li><strong>Hull Patch</strong> (<kbd>1</kbd>): +40 hull over 2 s, interruptible. Cheap at any station. Stacks 5.</li>
+<li><strong>Shield Cell</strong> (<kbd>2</kbd>): instant +35 shield, resets the regen delay. Stacks 5.</li>
+<li><strong>Fuel Rod</strong>: +1 boost charge, instant. Stacks 3.</li>
+<li><strong>Distress Flare</strong>: one-shot local repair drone, 30 u, heals 4 hull/s for 10 s, draws aggro.</li>
+</ul>
+<p>Slots spent on kit versus goods is the loadout decision of the trip.</p>
+
+<h3 id="s1-10">1.10 Money, death &amp; reputation</h3>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Thing</th><th>Where it lives</th><th>On death</th><th>How you get it</th></tr></thead>
+<tbody>
+<tr><td><strong>Credits</strong> (banked wallet)</td><td>meta</td><td>kept</td><td>Sell cargo and complete contracts; bank scrap while docked.</td></tr>
+<tr><td><strong>Purse</strong> (unbanked scrap)</td><td>run</td><td>lost</td><td>Field scrap, golden-drone bounties paid as goods into the purse — never straight into the bank.</td></tr>
+<tr><td><strong>Cargo hold</strong></td><td>run</td><td>lost</td><td>Everything looted in the field, plus bought consumables you have not used.</td></tr>
+<tr><td><strong>Fitted modules</strong></td><td>meta, rented to the run</td><td>returned to warehouse</td><td>Bought with credits.</td></tr>
+<tr><td><strong>Warehouse, ships, hangar upgrades</strong></td><td>meta</td><td>kept</td><td>Purchases. Hangar ladder in §4.5.</td></tr>
+<tr><td><strong>Knowledge, reputation, cosmetics</strong></td><td>meta</td><td>kept</td><td>Visited boards, lifetime credits banked, unlocks.</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li><strong>Death is a market loss, never a progress wipe.</strong> The hold was worth 1&nbsp;400 credits
+and you never reached Kestrel. The ship, the bays' modules, and the bank survive.</li>
+<li><strong>Trade reputation</strong> is lifetime credits banked through the network. It is a rank, never
+a currency. Tiers: Stranger → Courier (5&nbsp;000) → Freighter (20&nbsp;000) → Tycoon (80&nbsp;000).
+Perks: sell bonus +0 / +3 / +6 / +10%, better contract rolls, exotic module stock, cosmetic tiers.</li>
+<li><strong>No duplicate value, no negative balance, no hidden conversion.</strong> Credits appear only
+from field scrap (capped spawn), sell prices (≥ 50% of base after brand rules), contract premiums
+(≤ 1.7× board), and the fixed bounty table. §3.1 asserts this on every build.</li>
+</ul>
+
+<h3 id="s1-11">1.11 Cosmetics &amp; look</h3>
+<h4>World &amp; effects</h4>
+<ul>
+<li><strong>Ship kit:</strong> the player ship and all nine enemy types are assembled from one shared
+chamfered part kit. No raw default-segment primitives. Hard-normal facets, PBR materials from
+procedural 512² roughness/AO textures, a per-type emissive signature so a type reads before its
+name does. Fitted modules light visible pods on the hull — the loadout is readable from outside.</li>
+<li><strong>Station identity:</strong> three architectures, recognizable on approach. Reliance prefab
+boxes. Kestrel ring-truss, docking arms, a price-tower hologram you can read from range. Midnight: a
+low unmarked hull and one flickering airlock.</li>
+<li><strong>Post:</strong> ACES tonemap, selective bloom on emissives only, light grain. Quality tiers
+0–3 with auto-degrade. The price tower is the bloom showcase — markets are visible at distance.</li>
+<li><strong>Juice on economic moments:</strong> a kill scatters parts and magnet-swooshes into the hold
+with a slot tick; a sale flies a credit chip and rolls the wallet; a completed contract stamps;
+a rejected pickup flashes the cargo door; banking plays a manifest scan.</li>
+</ul>
+<h4>What you earn and buy (§4.4)</h4>
+<ul>
+<li><strong>Liveries</strong> paint hull / trim / glow zones, patterns solid, hazard-stripe, splat, or
+a corporate decal sheet. Three starters are free. The rest unlock by reputation tier or cost 50–400
+credits. Your livery is on the death screen and the dock camera.</li>
+<li><strong>Engine trails, weapon tracers, HUD themes, kill decals.</strong> A Sentinel kill chips that
+silhouette onto the nose. A Warden kill is a permanent hull scar and a title.</li>
+<li><strong>Cosmetics never gate power.</strong> They spend the same credits as modules. Flex versus
+firepower is a real choice only because the economy works.</li>
+<li><strong>Drydock tab</strong> at stations: a live turntable of your ship, paint chips, buy-and-equip
+while paused.</li>
+</ul>
+
+<h3 id="s1-12">1.12 HUD</h3>
+<ul>
+<li><strong>Cargo bar</strong>, bottom center: <code>23/40</code>, the top-value commodity, and what it
+is worth at the station you are pointed at (<code>alloy ×8 → ~640 @ Kestrel</code>).</li>
+<li><strong>Purse chip</strong> beside it. Banked credits appear in the terminal only. Two wallets, two
+homes, no ambiguity.</li>
+<li><strong>Contract tracker</strong>, top right when one is accepted: goods, destination, time budget.</li>
+<li><strong>Approach panel:</strong> brand, spread, and the top three sell values for what you hold.</li>
+<li><strong>Three bay pips</strong> showing the fitted loadout.</li>
+<li>Hull and shield bars, reticle color (red / orange / white by threat), boss bar, sector name, and
+distance from the sun. Commodity markers stay on while hauling: worth-here versus best-known, aimed
+at the nearest station.</li>
+</ul>
+
+<h3 id="s1-13">1.13 Combat &amp; the ladder</h3>
+<p>You fly away from a sun at the origin. Distance from it is the difficulty axis. Content sectors
+alternate with empty Voids that are deliberate breathing room. Enemy stats scale linearly,
+<code>stat × (1 + 0.25 × (sector − 1))</code>, capped at sector 6. Full tables: §4.6 and §4.7.</p>
+<ul>
+<li><strong>You.</strong> Hull 100 (no regen; stations repair it). Shield 50, regenerates at 10/s after
+3 s without a hit. Speed 80 u/s, boost ×2. Collision radius 2.5 u. 0.75 s invulnerability after a hit.</li>
+<li><strong>Weapons.</strong> Pulse autocannon, IEM burst, missile volley — numbers in §1.2 and §4.5.
+Every enemy attack has a named tell: cloak shimmer, beam telegraph, charge glow, fleet weave.</li>
+<li><strong>The ladder</strong> runs 0 → 230&nbsp;000 u across nine content sectors and five Voids, then
+THE END, where the universe drains 4 hull/s after an 8 s grace. You are not meant to live there.</li>
+<li><strong>The Warden</strong> waits in THE FORGE at 96&nbsp;000 u. 3&nbsp;000 hull, three phases
+(barrage, minefield plus drones, enrage beams). Killing it drops a Warden Shard and scars the hull.</li>
+<li><strong>Stations are rare.</strong> One guaranteed midpoint station per content sector, plus a
+0.25% chance per content chunk. Safe bubble 120 u. The world spawn is a 1&nbsp;200 u threat-free zone.</li>
+</ul>
+
+<h3 id="s1-14">1.14 Additions since P8 (v1.2)</h3>
+<p>Five post-release phases, each shipped with its gate (§3.2). P9 filled the combat ladder;
+P10–P13 are feel-and-readability fixes driven by playing the game.</p>
+<h4>P9 — Combat finale</h4>
+<ul>
+<li><strong>Sector-exit Sentinels:</strong> a mini-boss gates every sector exit (§4.6), spread burst,
+summons drones, guaranteed rare drop.</li>
+<li><strong>The Warden</strong> and <strong>sector hazards</strong> (§4.7: pulsar sweeps, debris
+storms) went live against their tables.</li>
+</ul>
+<h4>P10 — Flight camera, aim, crosshair</h4>
+<ul>
+<li><strong>Chase camera sits behind the nose.</strong> The §4.5 offset was applied with the wrong
+sign: the ship rendered in front of the camera and vanished. The engine nose is −Z;
+<code>updateCamera</code> negates the offset. Verified by gate: camera→ship dot &gt; 0.9.</li>
+<li><strong>Aim uses local axes</strong> — mouse right always yaws right under any roll.</li>
+<li><strong>Visible crosshair</strong>: ring + four ticks + center dot, threat-colored per §1.12.</li>
+</ul>
+<h4>P11 — Sun reference, pause menu, world density</h4>
+<ul>
+<li><strong>The sun never disappears.</strong> It is the player's compass, so the sun mesh is
+re-parked every frame on the true bearing from the camera, distance capped at 4&nbsp;200 u inside the
+far plane, frustum culling off. The real sun stays at <code>(SUN_CORE, 0, 0)</code>; never read the
+mesh position as world truth. An additive halo sprite breathes so it reads as a star.</li>
+<li><kbd>P</kbd> <strong>pause menu</strong>: freezes the sim with the same halt semantics as the
+trade terminal (D13), then shows bank credits, purse at risk, cargo fill, hull/shield, sector and
+distance from the sun, contracts completed and reputation, the active contract, and boost charges —
+next to the full key map. Auto-dismisses on death or when the terminal opens; the two never stack.
+Decor and sun parking keep running while paused so the frozen frame stays correct.</li>
+<li><strong>Interstellar gravel:</strong> a seeded field of ~700 tetrahedra in 1&nbsp;500 u cells
+around the ship, rebuilt on cell crossing. One instanced draw call, zero sim state, deterministic via
+<code>rngStream</code> — the Voids breathe, they no longer look empty.</li>
+</ul>
+<h4>P12 — Dynamic light &amp; post effects</h4>
+<ul>
+<li><strong>One combined finisher pass</strong> (D14) carries grain, vignette, radial chromatic
+aberration, boost speed lines, and the hurt flash. Frame cost stays one quad regardless of effect
+count; tier 0 skips it entirely so the software-GL floor stays cheap.</li>
+<li><strong>Chromatic aberration is radial</strong>: zero at the crosshair (aim stays sharp), rising
+toward the edges; it idles near invisible, heats with sustained fire, strongest under boost.</li>
+<li><strong>Speed lines</strong> streak radially during boost — velocity you can see.</li>
+<li><strong>Hurt flash</strong> kicks to red for ~0.2 s on damage.</li>
+<li><strong>Glow sprites</strong> feed bloom: engine glows follow throttle and flip red while boosting
+(the §4.4 tell), a 12-sprite muzzle pool pops in the current tracer cosmetic color, impact sparks on
+every confirmed hit. All pooled, zero per-frame allocation; engine glows re-parent on hull swap.</li>
+</ul>
+<h4>P13 — Aim is a self-centering virtual stick (D12)</h4>
+<ul>
+<li>Pointer deltas accumulate into a pull offset around the crosshair that commands <em>turn
+rate</em> — hold it and the ship keeps turning forever, no screen-edge wall. Release; after 2 s the
+stick eases to neutral and the ship flies straight, holding its heading. A small blue dot mirrors the
+stick so you always see which way you are pulling. Full rationale: §5.1 D12.</li>
+</ul>
+<h4>P14 — Playability pass (D15)</h4>
+<ul>
+<li><strong>Drivable aim.</strong> Sensitivity halved (0.0022 rad/px) and shaped by a 1.6 curve:
+gentle near the crosshair, full authority at the edge.</li>
+<li><strong>Biome identity.</strong> Each sector palette carries instanced silhouette fields —
+rust boulders, crystal shards, derelict panels, graveyard plating — in per-instance biome colors.
+Three draw calls, zero sim state.</li>
+<li><strong>Readable enemies.</strong> Every hostile renders 1.6× its collision radius (2 u floor)
+with a per-type emissive signature color; crates never threat-flag the reticle.</li>
+<li><strong>Stations found again.</strong> Extra-station chance 0.02 per content chunk plus a
+Void waystation roll.</li>
+<li><strong>Breakables shipped.</strong> The §1.3 promise finally exists: 2–4 anchored crates per
+content chunk, shoot open, spill biome-biased goods. Loot despawns with its chunk (pool saturation
+bug found by the p14 gate).</li>
+<li><strong>Boost lost its tunnel vignette</strong> — streaks alone sell the speed.</li>
+</ul>
+<h4>P15 — Trade &amp; safe zones (D16)</h4>
+<ul>
+<li><strong>Four panels, not one wall.</strong> The terminal splits into SELL · BUY · EQUIP · SHIP,
+Tab/←→ cycles panels, ↑↓ rows, Enter acts. The BUY panel has an explicit quantity selector (-/+);
+the EQUIP panel leads with a live ship-stats bar. Every row carries a tooltip — what it does, what it
+costs, why it is locked.</li>
+<li><strong>Mouse freed on open.</strong> The terminal drops pointer lock when it opens and the header
+states "press ESC to free the mouse cursor".</li>
+<li><strong>Hangar upgrades purchasable.</strong> Cargo pods / hull plating / shield capacitor /
+weapon tuning / engine Mk — three levels each, permanent, sold on the SHIP panel. The stats()
+counters had been waiting for a shop since P5.</li>
+<li><strong>Security shields.</strong> Wireframe domes at every station, radius = the H-interaction
+constant. Inside: hostiles idle and ignore you; the prompt reads SHIELD SAFE, the reticle turns cyan.
+Leaving re-acquires the frame you cross the dome.</li>
+</ul>
+<h4>P16 — Graphic rehearsal (D17)</h4>
+<ul>
+<li><strong>Measured, not eyeballed.</strong> A framed readPixels harness screenshotted every entity
+kind against black and counted lit pixels before/after — the numbers drove the fixes.</li>
+<li><strong>Projectiles emit light.</strong> Pulse bolts: fat capsule cores with additive halo sprites
+matching the tracer color; the salvo reads as a stream of comets.</li>
+<li><strong>Missiles are fireballs.</strong> Cone darts oriented to velocity, per-frame exhaust puffs,
+launch flashes, and an orange shockwave + fireball debris on detonation.</li>
+<li><strong>IEM is a set piece.</strong> Double cyan/white shockwave expanding to the true IEM radius
+— the AoE is now legible while it happens.</li>
+<li><strong>Contact ring.</strong> Hostiles (diamond in their signature color), breakable crates
+(green square), and loot (tier-colored dot) get screen-projected markers with distances, edge-clamped
+and nearest-first, the same language as the station nav ring. Behind-camera contacts drop; the ring
+clears inside the terminal.</li>
+</ul>
+
+<hr>
+
+<h2 id="part2">Part II — Implementation</h2>
+
+<h3 id="s2-1">2.1 Design laws</h3>
+<p>These are invariants, not taste. A change that breaks one is a design change and needs a decision-log
+line, not a quiet patch.</p>
+<div class="t-scroll">
+<table>
+<thead><tr><th>#</th><th>Law</th><th>What it forbids</th></tr></thead>
+<tbody>
+<tr><td>L1</td><td><strong>Pickups never become money by themselves.</strong> A collect writes the hold. Credits exist only after an explicit sell or bank at a station.</td><td>Auto-sell, wallet credit on magnet, "sell above threshold".</td></tr>
+<tr><td>L2</td><td><strong>The hold is what death takes.</strong> Death clears hold and purse and writes nothing into meta.</td><td>A death penalty aimed at an empty manifest. Banking as a side effect of opening the menu.</td></tr>
+<tr><td>L3</td><td><strong>Power comes from bays and hangar upgrades only.</strong> Warehouse stock, carried goods, and reputation do not change combat stats. Reputation changes prices, stock, and contracts.</td><td>Passive buffs from a hoarded inventory. Selling a good as a loss of power.</td></tr>
+<tr><td>L4</td><td><strong>Refit never destroys hardware.</strong> Install, uninstall, and swap conserve the module count. Buy adds one. Sell-for-parts is an explicit, confirmed action.</td><td>Install that consumes a unit with no refund path.</td></tr>
+<tr><td>L5</td><td><strong>Profit requires movement.</strong> Buy-then-sell at the same station, drift frozen, returns at most 72% of the price paid. At least three cross-sector routes clear 25% net. None exceed 3.2×.</td><td>A fixed spread with no geography. A print-money route.</td></tr>
+<tr><td>L6</td><td><strong>Same seed, same world, same boards.</strong> Generation, drops, brands, and drift are pure functions of the seed plus coordinates or station id.</td><td>Unseeded <code>Math.random</code> on any of those paths.</td></tr>
+<tr><td>L7</td><td><strong>The economy crate imports no renderer.</strong> <code>src/economy/</code> is plain data and pure functions, runnable under Node. The sim can be proven without a GPU.</td><td>A <code>THREE</code> import under <code>economy/</code>. A gate that needs a browser to check a ledger.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="box dan">
+<h4>Why these are one design, not six patches</h4>
+<p>Turn L1 off and there is nothing to haul. Keep L1 but drop L5 and every station is the same bad
+deal. Keep both but let the warehouse buff the ship (breaking L3) and hoarding beats flying, so death
+stops mattering. The gates in §3.1 exist so the subsystem cannot silently rot back into that
+contradiction.</p>
+</div>
+
+<h3 id="s2-2">2.2 Economy model</h3>
+<p>Two stores, one direction of flow each. Both are plain data.</p>
+<pre><span class="c">// meta — persisted, validated on load</span>
+meta = {
+  credits,                          <span class="c">// integer</span>
+  warehouse: { moduleId: count },
+  bays: [moduleId | null, …],       <span class="c">// length 3</span>
+  ships: { owned: [], active },
+  upgrades: { id: level },
+  rep: { lifetime, tier },
+  knowledge: { commodityId: { seenAt, lastPrice, bestSeen } },
+  cosmetics: { owned: [], active: { livery, trail, tracer, hudTheme } },
+  contractsHistory
+}
+
+<span class="c">// run — one flight, forfeited on death</span>
+run = {
+  hold: { itemId: count },          <span class="c">// commodities, scrap, consumables</span>
+  holdSlotsUsed, holdSlotsMax,      <span class="c">// 40 + 15 × cargoPodsLevel</span>
+  purseScrap,                       <span class="c">// bankable, lost on death</span>
+  contract: { offer, acceptedAt, deadlineS } | null
+  <span class="c">// plus combat fields: hull, shield, position, cooldowns</span>
+}</pre>
+<ul>
+<li><strong>Flow.</strong> Field → <code>run.hold</code> (magnet pull is unchanged: 120 u/s inside 30 u)
+→ station terminal → an explicit SELL or BANK. Bank converts scrap clusters and completes a contract
+delivery. Goods convert only through the sell grid. <kbd>H</kbd> opens the terminal. Nothing banks
+because a key was pressed.</li>
+<li><strong>Module flow.</strong> BUY adds one to the warehouse. INSTALL moves it into a free bay.
+Swap moves. Stats are read only from <code>bays</code>.</li>
+<li><strong>Price state</strong> is world data, seeded from <code>worldSeed</code> plus station id
+(§2.3). It is reproducible and shared across visits.</li>
+</ul>
+
+<h3 id="s2-3">2.3 Price model</h3>
+<pre>localValue(commodity, station, t) =
+    basePrice × demand(commodity, station.sector)     <span class="c">// §4.2, 0.55 – 2.40</span>
+            × (1 + drift(station, commodity, t))      <span class="c">// seeded sine noise, ±0.15, period 90 s</span>
+            × repWarm(station)                        <span class="c">// 1.00 – 1.06, decays over 10 min</span>
+
+playerSellPrice = round(localValue × brandSell)
+    <span class="c">// KESTREL 1.00 · RELIANCE 0.90 · MIDNIGHT 1.10 on contraband, 1.00 otherwise</span>
+playerBuyPrice  = round(localValue × 1.30)</pre>
+<ul>
+<li><strong>Contract price</strong> = destination <code>playerSellPrice × (1.4–1.7)</code>, seeded per
+offer. The premium stacks on the destination board, so routes, boards, and contracts add instead of
+competing.</li>
+<li><strong>Brand refusal.</strong> Reliance and Kestrel will not buy contraband. Midnight will, at
++10%. That is the whole rule; it is one column in §4.1.</li>
+<li><strong>Spawn guard.</strong> Field scrap is the only currency that enters from the world. Per-chunk
+drop counts are capped (§4.5). The invariant run asserts expected combat income stays ≤ 2.2× a
+sell-everything trip, so fighting never outpays hauling by an order of magnitude.</li>
+<li>Every coefficient above is a <code>const</code> in <code>economy/constants.js</code>. The functions
+are pure and unit-tested. <code>./launch.sh eco</code> simulates the market with no browser.</li>
+</ul>
+
+<h3 id="s2-4">2.4 Trade terminal</h3>
+<p>A station terminal, about 96 vw, keyboard-navigable, pauses the simulation. <strong>Four distinct
+panels</strong> (D16 — one tabbed mega-grid proved too opaque):</p>
+<ol>
+<li><strong>SELL · MANIFEST</strong> — the hold as rows: name, count, slots, worth-here, delta versus
+best known. Enter builds a slip, -/+ adjusts, footer SELL SLIP confirms. Contract offers and delivery
+live at the bottom of this work panel.</li>
+<li><strong>BUY · RESOURCES</strong> — the commodity market with an explicit quantity selector
+(-/+ adjusts, Enter buys the quantity, B buys one). Sell/buy columns, drift sparkline, demand factor
+and lore in the tooltip; undiscovered rows grey until knowledge exists (§1.6).</li>
+<li><strong>EQUIP · MODULES</strong> — a live stats bar (hull, shield + regen, DPS, speed, hold,
+magnet, bank) above module buy/install/uninstall/melt and consumables. Every row carries a tooltip:
+what the module does, what melting costs, why a rep gate locks it.</li>
+<li><strong>SHIP · UPGRADES &amp; HANGAR</strong> — permanent hangar upgrades (cargo pods, hull
+plating, shield capacitor, weapon tuning, engine Mk; three levels each, survive death), hulls
+(buy once, swap free), the drydock turntable and cosmetics.</li>
+</ol>
+<p><strong>Mouse release (D16):</strong> opening the terminal drops pointer lock and the header states
+&ldquo;press ESC to free the mouse cursor&rdquo; — the cursor is clickable for panel rows. ESC itself
+closes the terminal (same as H).</p>
+<p><strong>Security shields (D16):</strong> every station is sheathed in a visible wireframe dome whose
+radius <em>is</em> the H-interaction radius (STATION_BUBBLE, 120 u — one constant, no drift). Inside the
+bubble the ship is masked: hostiles stop closing and stop firing (they idle-drift and re-acquire the
+frame you leave). In-flight projectiles still land. The dock prompt reads &ldquo;SHIELD SAFE&rdquo; and
+the reticle tints cyan while masked.</p>
+<p><strong>BANK (footer, unchanged):</strong> scrap, contract delivery, and hull/shield repair with
+itemized costs; Midnight's +25% on the receipt. Nothing sells on a stray click; closing discards an
+unconfirmed slip; irreversible actions confirm. This is the emotional center of the loop; it is never a
+side effect.</p>
+<p class="sub">The terminal is diegetic: colors, type, and hologram noise follow the station brand. A HUD
+theme reskins the terminal, not just a bar.</p>
+
+<h3 id="s2-5">2.5 Repo layout</h3>
+<pre>void-cartel/
+  index.html  launch.sh  SPEC.html  README.md
+  src/
+    core/        Constants.js   <span class="c"># §4.5–§4.7, the data contract</span>
+                 EventBus.js · Save.js          <span class="c"># v2 schema, validate-or-reset</span>
+                 GameState.js                   <span class="c"># the two stores in §2.2; no item-buff math</span>
+    economy/     constants.js · catalog.js      <span class="c"># commodities, modules, consumables</span>
+                 prices.js · contracts.js · rep.js · flows.js · upgrades.js
+                 <span class="c"># pure, no THREE, Node-testable — the economy runs headless</span>
+    world/       ChunkManager · SectorGenerator · HazardSystem · Breakables
+    entities/    PlayerShip · enemies · Station
+    systems/     combat · TradeTerminal
+    visuals/     kit/ · liveries · trails · FX · post
+    ui/          HUD · Terminal · Hangar · KnowledgeLog
+  test/
+    economy.test.mjs       <span class="c"># §3.1</span>
+    contracts.test.mjs
+    save.test.mjs
+    smoke.mjs  leak.mjs  check-perf.mjs
+    hazards.test.mjs  ladder.test.mjs                  <span class="c"># P9</span>
+    p10-camera.test.mjs  p11-sunpause.test.mjs
+    p12-lightfx.test.mjs  p13-aim.test.mjs             <span class="c"># P10–P13</span>
+    p14-playability.test.mjs  p15-terminal-safezone.test.mjs  p16-graphic-rehearsal.test.mjs  <span class="c"># P14–P16</span>
+    freeze-gate.test.mjs  frozen.sha256  run-gates.mjs</pre>
+
+<h3 id="s2-6">2.6 Pipeline P0–P16</h3>
+<p>Each phase ends playable, or — for P1 — with a headless report a human has read. The gate ships in
+the same phase as the feature it protects.</p>
+<div class="step"><b>P0 — Scaffold</b> · repo, <code>launch.sh</code>, Vite, a flyable ship in Open Space
+with the pulse autocannon, one drone pack, one station bubble that opens an empty terminal.
+<span class="sub">Exit: <code>./launch.sh</code> plays; smoke, leak, and perf gates green on this
+slice. Missing <code>package.json</code> makes the launcher name this phase and exit non-zero.</span></div>
+<div class="step"><b>P1 — Economy core, headless</b> · catalog, prices, flows, reputation, contracts.
+No UI. <span class="sub">Exit: <code>./launch.sh eco</code> green on 3 seeds × 500 trades. Every §3.1
+invariant holds.</span></div>
+<div class="step"><b>P2 — Physical hold</b> · manifest, slots, pickup into the hold, full-hold
+rejection, cargo bar, death clears a hold that actually had contents.
+<span class="sub">Exit: die carrying 1&nbsp;000 credits of goods → 0 newly banked, manifest empty,
+meta untouched.</span></div>
+<div class="step"><b>P3 — Terminal</b> · four zones, explicit bank, boards, sell grid, contract board.
+<span class="sub">Exit: terminal smoke path; every irreversible action confirmed; full keyboard
+navigation.</span></div>
+<div class="step"><b>P4 — Station network</b> · three brands, placement, price towers, brand rules,
+nav-ring deltas, knowledge. <span class="sub">Exit: all three brands appear in the first three content
+sectors on at least 90% of seeds.</span></div>
+<div class="step"><b>P5 — Modules &amp; consumables</b> · bays, free swap, warehouse, hull glow ports,
+consumables on <kbd>1</kbd>/<kbd>2</kbd>, bootleg line. <span class="sub">Exit: install, swap, and
+uninstall never change the module total.</span></div>
+<div class="step"><b>P6 — Cosmetics &amp; drydock</b> · ship kit, liveries, trails, tracers, HUD
+themes, reputation-gated catalog, turntable. <span class="sub">Exit: every catalog row renders; a
+livery survives ship swap and shows on the death screen.</span></div>
+<div class="step"><b>P7 — Visual pass</b> · station architecture, ACES / bloom / tiers, juice on every
+economic moment. <span class="sub">Exit: perf re-baseline against §3.3; a human has watched a sell, a
+stamp, and a rejected pickup.</span></div>
+<div class="step"><b>P8 — Balance &amp; first trip</b> · route profitability against the §3.1 floors,
+contract cadence, reputation curve. The first contract is scripted and teaches the terminal in about
+90 seconds. <span class="sub">Exit: launch → scripted contract → trip → dock → buy → install → deeper
+sector → die → meta intact, on three seeds. Release bundle.</span></div>
+<div class="step"><b>P9 — Combat finale</b> · sector-exit Sentinels, The Warden, sector hazards
+(§4.6, §4.7). <span class="sub">Exit: Sentinel gates the exit on every content sector; Warden three
+phases killable; hazards damage on their §4.7 timing. Ladder + hazards gates.</span></div>
+<div class="step"><b>P10 — Flight camera &amp; aim fix</b> · chase camera behind the nose, local-axis
+aim, threat-colored crosshair (§1.14). <span class="sub">Exit: p10 gate — camera behind nose, ship
+on-screen, aim correct under roll, reticle recolors by threat.</span></div>
+<div class="step"><b>P11 — Sun reference &amp; pause menu</b> · always-parked sun + halo, <kbd>P</kbd>
+pause menu with indicators and key map, gravel decor field (§1.14). <span class="sub">Exit: p11 gate —
+sun on true bearing at any depth, pause freezes sim and paints stats, resume clean.</span></div>
+<div class="step"><b>P12 — Dynamic light FX</b> · combined finisher pass (CA, speed lines, hurt),
+engine/muzzle/spark glow sprites (§1.14). <span class="sub">Exit: p12 gate — shader compiles per tier,
+pools fixed-size, CA heats on fire and boost, hurt flash decays; draw-call budget holds.</span></div>
+<div class="step"><b>P13 — Self-centering aim (D12)</b> · virtual-stick aim: endless hold-to-turn,
+3.2 rad/s, 2 s recenter (§1.2, §1.14). <span class="sub">Exit: p13 gate — held pull accumulates &gt;
+1.5 rad continuously, rudder neutral after idle, stick indicator, respawn reset.</span></div>
+<div class="step"><b>P14 — Playability pass (D15)</b> · drivable aim curve, biome decor fields,
+readable enemies, station density, breakable crates (§1.14). <span class="sub">Exit: p14 gate —
+biome decor differs across sectors, crates spawn/shoot open/never threat-flag, enemy visual floor,
+station sweep meets density, gentle-then-neutral aim.</span></div>
+<div class="step"><b>P15 — Trade &amp; safe zones (D16)</b> · four-panel terminal with tooltips and
+quantity buys, purchasable hangar upgrades, pointer release on open, station shield domes as safe
+zones (§2.4). <span class="sub">Exit: p15 gate — shield radius == interaction radius on every
+station, hostiles ignore the masked ship and re-acquire outside, 4 panels + ESC note + lock released,
+tooltips present, upgrades buy/level/max.</span></div>
+<div class="step"><b>P16 — Graphic rehearsal (D17)</b> · measured with readPixels on framed entity
+screenshots: glowing fat pulse bolts, missile fireballs with exhaust trails and detonation rings,
+IEM shockwave set-piece, HUD contact ring tracking hostiles / breakables / loot like stations
+(§1.11, §1.12). <span class="sub">Exit: p16 gate — framebuffer deltas: salvo and IEM light the frame,
+single bolt ≥ 1300 lit px in the 400² crop, contact markers for all three classes with distances,
+behind-camera culled, cleared in terminal.</span></div>
+
+<h3 id="s2-7">2.7 Commit discipline</h3>
+<ul>
+<li>One phase, one branch, squash-merged as <code>P#: summary</code>. Combat or world changes and
+economy changes never share a commit.</li>
+<li><code>economy/constants.js</code> and the §4 tables freeze after P8. A later change needs a
+<code>REBALANCE:</code> tag and a decision-log line. A hash gate fails the build otherwise.</li>
+<li>Commit messages say what changed. <code>dist/</code> stays out of git.</li>
+</ul>
+
+<hr>
+
+<h2 id="part3">Part III — Testing</h2>
+
+<h3 id="s3-1">3.1 Economy invariant gates</h3>
+<p>Headless, <code>./launch.sh eco</code>, pure Node, every phase from P1 on. Three seeds, 500
+seeded transactions each.</p>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Gate</th><th>Assertion</th></tr></thead>
+<tbody>
+<tr><td><code>conservation</code></td><td>Every credit created is attributable: sold value + contract premium + bounty table + banked field scrap. Sum of ledger events equals the wallet delta, exact integer. Nothing mints value from nothing.</td></tr>
+<tr><td><code>no-negative</code></td><td>No wallet, warehouse, hold, or bay goes negative under double-sell, sell-plus-install, or banking twice while docked.</td></tr>
+<tr><td><code>roundtrip</code></td><td>Buy then sell at the same station, drift frozen, returns ≤ 72% of the price paid. Profit only comes from movement.</td></tr>
+<tr><td><code>routes-profit</code></td><td>At least three commodity-and-station pairs net &gt; 25% against the origin board after the 0.85/1.30-class spread. Computed from the live tables.</td></tr>
+<tr><td><code>routes-bounded</code></td><td>No route nets more than 3.2×.</td></tr>
+<tr><td><code>hold-truth</code></td><td>Slots never exceed max. A rejected pickup is reported, never dropped quietly. Death clears hold and purse and does not touch meta.</td></tr>
+<tr><td><code>module-account</code></td><td>Units bought = warehouse + bays + units sold for parts. Install, uninstall, and swap do not change the total.</td></tr>
+<tr><td><code>rep-monotone</code></td><td>Reputation never decreases. Tier perks change only at the thresholds in §1.10.</td></tr>
+<tr><td><code>contract-fair</code></td><td>Deadline ≥ 1.6× shortest flight at 80% throttle.</td></tr>
+<tr><td><code>save-robust</code></td><td>Corrupt JSON, NaN injection, unknown ids → that store resets to defaults. No throw.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s3-2">3.2 Phase matrix</h3>
+<div class="t-scroll">
+<table>
+<thead><tr><th></th><th>eco gates</th><th>smoke</th><th>leak</th><th>perf</th><th>manual</th></tr></thead>
+<tbody>
+<tr><td>P0</td><td>—</td><td class="done">required</td><td class="done">required</td><td class="done">required</td><td>ship flies, station opens</td></tr>
+<tr><td>P1</td><td class="done">required</td><td>—</td><td>—</td><td>—</td><td>eco report read</td></tr>
+<tr><td>P2–P5</td><td class="done">required</td><td class="done">required</td><td class="done">required</td><td class="done">required</td><td>one full economic trip</td></tr>
+<tr><td>P6–P7</td><td class="done">required</td><td class="done">required</td><td class="done">required</td><td class="done">required</td><td>catalog + juice, watched</td></tr>
+<tr><td>P8</td><td class="done">required</td><td class="done">required</td><td class="done">required</td><td class="done">required</td><td>acceptance run × 3 seeds</td></tr>
+<tr><td>P9</td><td class="done">required</td><td>—</td><td>—</td><td class="done">required</td><td>Sentinel + Warden + hazards (ladder, hazards gates)</td></tr>
+<tr><td>P10</td><td>—</td><td>—</td><td>—</td><td>—</td><td>camera behind nose, aim under roll, reticle threat (p10-camera)</td></tr>
+<tr><td>P11</td><td>—</td><td>—</td><td>—</td><td>—</td><td>sun bearing at depth, pause freeze + paint (p11-sunpause)</td></tr>
+<tr><td>P12</td><td>—</td><td>—</td><td class="done">required</td><td>—</td><td>finisher pass, CA heats, pools fixed (p12-lightfx)</td></tr>
+<tr><td>P13</td><td>—</td><td>—</td><td>—</td><td>—</td><td>endless hold-turn, 2 s neutral recenter (p13-aim)</td></tr>
+<tr><td>P14</td><td class="done">required</td><td>—</td><td class="done">required</td><td class="done">required</td><td>biome fields, breakables, readable enemies, station density (p14-playability)</td></tr>
+<tr><td>P15</td><td class="done">required</td><td>—</td><td class="done">required</td><td>—</td><td>4-panel terminal + tooltips, purchasable upgrades, shield safe zone (p15-terminal-safezone)</td></tr>
+<tr><td>P16</td><td class="done">required</td><td class="done">required</td><td class="done">required</td><td>—</td><td>graphic rehearsal: glowing projectiles, missile/IEM spectacle, contact ring (p16-graphic-rehearsal)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s3-3">3.3 Perf &amp; leak gates</h3>
+<ul>
+<li><strong>Draw calls are measured around the real frame,</strong> not the post pass.
+<code>renderer.info.autoReset = false</code>, reset once per frame around <code>composer.render()</code>.
+Budget ≤ 200 draw calls in every sector including the finale. A gate that samples the output pass and
+reports "1" is a broken gate.</li>
+<li><strong>Death is deterministic in the harness.</strong> A debug-only <code>__VC__.applyPlayerDeath()</code>
+triggers the forfeit path. Do not race a drone into the player and hope.</li>
+<li><strong>Two baselines, labeled.</strong> A software-GL smoke floor (sanity: it runs) and a GPU budget
+(60 fps, 1920×1080, heaviest sector, price-tower holograms and bloom on). Never average them into one number.</li>
+<li><strong>What is sampled.</strong> <code>performance.now()</code> ring buffer, 60 s steady, 5 s warm-up
+discarded, report p99 not the mean. Leak signature: heap growth ≤ 15 MB over 5 minutes, and a
+restart returns to the baseline within 2 MB.</li>
+<li><strong>The terminal is DOM and pauses the sim.</strong> Board sparklines and the 3D backdrop are
+still budgeted: ≤ 12 ms worst-case to open, and that number is measured.</li>
+<li><strong>Hard ceilings</strong> from §4.5: 8 dynamic lights, 1&nbsp;500 pooled particles, 200 pooled
+projectiles, device pixel ratio capped at 2, delta time capped at 0.1 s, RAF pauses when the tab is hidden.</li>
+</ul>
+
+<hr>
+
+<h2 id="part4">Part IV — Reference</h2>
+
+<h3 id="s4-1">4.1 Commodity catalog</h3>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Commodity</th><th class="num">Base</th><th>Tier</th><th>Primary sources</th><th>Stack</th><th>Contraband</th></tr></thead>
+<tbody>
+<tr><td>Scrap cluster</td><td class="num">1</td><td>currency</td><td>every kill and prop; dense in the Belt</td><td>∞, one block</td><td>no</td></tr>
+<tr><td>Hull Alloy</td><td class="num">18</td><td>common</td><td>rammer wrecks, containers, hulks</td><td>20</td><td>no</td></tr>
+<tr><td>Coolant Gel</td><td class="num">22</td><td>common</td><td>containers, frigate pods</td><td>20</td><td>no</td></tr>
+<tr><td>Crystal Shard</td><td class="num">26</td><td>common</td><td>crystal clusters in the Crystal Fields</td><td>15</td><td>no</td></tr>
+<tr><td>Data Core</td><td class="num">34</td><td>common</td><td>satellite wrecks, snipers</td><td>12</td><td>no</td></tr>
+<tr><td>Fuel Rod</td><td class="num">30</td><td>common</td><td>containers, graveyards</td><td>12</td><td>no</td></tr>
+<tr><td>Bio-lume</td><td class="num">48</td><td>uncommon</td><td>worm segments, graveyard murk</td><td>10</td><td>no</td></tr>
+<tr><td>Phase Conduit</td><td class="num">72</td><td>uncommon</td><td>plasma-storm props, pulsars</td><td>8</td><td>no</td></tr>
+<tr><td>Sentinel Plating</td><td class="num">110</td><td>rare</td><td>Chrome Sentinel wrecks only</td><td>6</td><td>no</td></tr>
+<tr><td>Void Glass</td><td class="num">160</td><td>rare</td><td>caches near black holes (gravity risk)</td><td>4</td><td>no</td></tr>
+<tr><td>Warp Filigree</td><td class="num">240</td><td>exotic</td><td>death-star hangars, contract rewards</td><td>3</td><td>no</td></tr>
+<tr><td>Warden Shard</td><td class="num">400</td><td>exotic</td><td>Warden kill, scripted</td><td>3</td><td>yes</td></tr>
+<tr><td>Void Relic</td><td class="num">520</td><td>exotic</td><td>deep-void caches, THE END detritus</td><td>2</td><td>yes</td></tr>
+</tbody>
+</table>
+</div>
+<p class="sub">Base is the board at demand 1.0. Sell and buy follow §2.3. Contraband: Reliance refuses, Kestrel
+refuses, Midnight pays +10%. Exotic weight in a generic drop table stays ≤ 2% outside scripted drops.</p>
+
+<h3 id="s4-2">4.2 Sector demand factors</h3>
+<p>Factors apply to <code>localValue</code>. A commodity not listed for a sector uses 1.0. These are the
+authored extremes; the rest of each sector's row is filled so that every listed route below stays
+inside the 3.2× cap after spread.</p>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Sector</th><th>Dearest</th><th>Cheapest</th><th>Design read</th></tr></thead>
+<tbody>
+<tr><td>Open Space</td><td>alloy 1.5, fuel 1.4</td><td>shards 0.6, bio-lume 0.6</td><td>You buy gear here. You do not sell junk here.</td></tr>
+<tr><td>Asteroid Belt</td><td>shards 1.8, data 1.5</td><td>alloy 0.55</td><td>Haul crystals in, haul alloy out.</td></tr>
+<tr><td>Crystal Fields</td><td>coolant 1.9, fuel 1.7</td><td>shards 0.6</td><td>The source market. Mine cheap, leave richer.</td></tr>
+<tr><td>Plasma Storm</td><td>coolant 2.1</td><td>conduits 0.7</td><td>High demand, high danger.</td></tr>
+<tr><td>Derelict Graveyard</td><td>alloy 1.6, bio-lume 1.4</td><td>data 0.6</td><td>Scavenger bazaar.</td></tr>
+<tr><td>THE FORGE</td><td>alloy 2.4, shards 2.2</td><td>exotic feed 1.0</td><td>The foundry pays for feedstock. The Warden guards the door.</td></tr>
+<tr><td>THE ABYSS</td><td>conduits 1.9</td><td>plating 0.8, void glass 0.9</td><td>Risk-premium market.</td></tr>
+<tr><td>DEAD STAR REACH</td><td>bio-lume 1.8</td><td>filigree 0.8</td><td>Organics dear, hardware cheap.</td></tr>
+<tr><td>SHIP GRAVEYARD</td><td>data 1.7</td><td>alloy 0.7</td><td>Nobody buys scrap where scrap grows on trees.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="sub">Gate-proven routes (demand ratio, before the brand spread, all under the 3.2× net cap once
+spread is applied): Belt alloy → Forge (0.55 → 2.4), Crystal shards → Belt (0.6 → 1.8), Plasma
+coolant → Open Space (sold against a home board that is not oversupplied), Abyss conduits → Crystal
+Fields. <code>routes-profit</code> recomputes these from the tables; do not hard-code the multiples
+in the test.</p>
+
+<h3 id="s4-3">4.3 Module catalog</h3>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Module</th><th>Tier / price</th><th>Fitted effect</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Weapon Tuner II</td><td>uncommon · 220</td><td>+2.5 shots/s, +6 damage</td><td>the workhorse weapon bay</td></tr>
+<tr><td>Ion Drive</td><td>uncommon · 240</td><td>+18 speed, −8% turn rate</td><td>speed with a handling cost</td></tr>
+<tr><td>Magnet Array</td><td>uncommon · 180</td><td>+16 u pickup, +30 u magnet</td><td>the hauler's tool</td></tr>
+<tr><td>Trade Ledger</td><td>uncommon · 200</td><td>+8% sell, live remote quotes</td><td>the knowledge module</td></tr>
+<tr><td>Repair Drone</td><td>rare · 420</td><td>+0.8 hull/s out of combat, patch stacks ×2</td><td>the survival slot</td></tr>
+<tr><td>Scanner Mast</td><td>rare · 380</td><td>+40% loot detection, contraband tags on boards</td><td>market awareness</td></tr>
+<tr><td>Warp Injector</td><td>rare · 460</td><td>+1 boost charge, recharge 0.8 s faster</td><td>the full-hold escape</td></tr>
+<tr><td>Aegis Core</td><td>exotic · 900</td><td>+30 hull, +30 shield, +0.4 regen</td><td>Kestrel, reputation-gated</td></tr>
+<tr><td>Overclock Core</td><td>exotic · 950</td><td>+3 shots/s, +8 damage, −10% shield regen</td><td>glass cannon with a named cost</td></tr>
+<tr><td>Contraband Cooler</td><td>bootleg · 330</td><td>+14% contraband sale, Kestrel reputation gain −20%</td><td>Midnight only</td></tr>
+</tbody>
+</table>
+</div>
+<p class="sub">A good trip nets about 900–1&nbsp;400 credits: one uncommon, or a save toward a rare in two or
+three trips. Three bays. Swap is always free. Ownership is permanent.</p>
+<p>Bootleg drawbacks (Midnight, 20% under the table price, four of the ten, curated per seed): the
+installed bonus is ×0.8 and the hull bar shows +20% heat. Heat is visual. It does not change stats
+beyond the stated ×0.8.</p>
+
+<h3 id="s4-4">4.4 Cosmetic catalog</h3>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Cosmetic</th><th>Unlock</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Liveries — starter ×3</td><td>owned</td><td>Warden Red, Courier Grey, Void Black</td></tr>
+<tr><td>Liveries — company ×5</td><td>50–150 credits</td><td>Reliance corporate, Kestrel amber, hazard stripe, splat, MEAT SHIP</td></tr>
+<tr><td>Liveries — network ×3</td><td>Courier / Freighter / Tycoon</td><td>green truss, ring gold, unmarked black with red eyes</td></tr>
+<tr><td>Livery — Warden Scar</td><td>first Warden kill</td><td>permanent hull scar, burn pattern, title</td></tr>
+<tr><td>Engine trails ×6</td><td>40–120 credits</td><td>color and plume length. Boost still flashes red — that tell is not cosmetic.</td></tr>
+<tr><td>Weapon tracers ×4</td><td>40–100 credits</td><td>laser line, heavy tracer, ember, wireframe</td></tr>
+<tr><td>HUD themes ×5</td><td>80–200 credits, or a tier</td><td>mono-amber CRT, glass, brutalist, chrome, Midnight red. Reskins the terminal too.</td></tr>
+<tr><td>Kill decals</td><td>automatic</td><td>one chipped silhouette per Sentinel type; the Warden scar sits on the nose</td></tr>
+<tr><td>Hold trim</td><td>60 credits</td><td>manifest color and a visible hold glow on the hull</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s4-5">4.5 Ship, world &amp; combat constants</h3>
+<p>This table is the data contract. <code>src/core/Constants.js</code> exports these names and nothing
+else invents a number. Combat and world numbers are frozen: a change needs <code>REBALANCE:</code>
+plus a decision-log line.</p>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Constant</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Hull / shield / shield regen / shield delay</td><td>100 / 50 / 10 per s / 3 s</td></tr>
+<tr><td>Max speed / boost / boost duration / boost cooldown</td><td>80 u/s / ×2 / 4.5 s / 8 s</td></tr>
+<tr><td>Accel / drag / collision radius / turn rate</td><td>60 u/s² / 0.5 / 2.5 u / 3.2 rad/s at full stick <span class="sub">(REBALANCE: D12, was 2.4 cursor-follow)</span></td></tr>
+<tr><td>Invulnerability after a hit</td><td>0.75 s</td></tr>
+<tr><td>Pulse autocannon</td><td>10 dmg, 6/s, projectile 1500 u/s, life 1.6 s</td></tr>
+<tr><td>IEM</td><td>radius 160 u, 60 dmg, cooldown 5 s</td></tr>
+<tr><td>Missiles</td><td>5 × 45 dmg, 300 u/s, life 5 s, turn 3.5 rad/s, fuse 4 u, cooldown 6 s, salvo gap 0.5 s</td></tr>
+<tr><td>Hold, base / Cargo Pods</td><td>40 slots; +15 per level, 3 levels, cost 80 + 80×level</td></tr>
+<tr><td>Pickup / magnet / magnet speed</td><td>8 u / 30 u / 120 u/s</td></tr>
+<tr><td>Chunk edge / load radius / unload radius</td><td>2&nbsp;500 u / 2 / 3</td></tr>
+<tr><td>Sun core / spawn distance from sun</td><td>1&nbsp;200 u / 3&nbsp;000 u</td></tr>
+<tr><td>Aggro radius / world safe radius / station bubble</td><td>700 u / 1&nbsp;200 u / 120 u</td></tr>
+<tr><td>Content per chunk</td><td>1 landmark; 4–8 enemy groups; 1–2 loot clusters (3–6 pickups, scatter 40 u); 2–4 breakable crates (Void legs 0–1; biome-biased drops, D15)</td></tr>
+<tr><td>Station chance per content chunk</td><td>0.02 (REBALANCE: D15, was 0.0025), plus one guaranteed midpoint station per content sector; Voids roll 0.006</td></tr>
+<tr><td>Void chunks</td><td>≤ 1 derelict; 5% treasure-cache chance</td></tr>
+<tr><td>Sector scaling</td><td><code>× (1 + 0.25 × (sector − 1))</code>, cap at sector 6</td></tr>
+<tr><td>Hangar: Hull Plating</td><td>+25 hull, 4 levels, cost 100 + 100×level</td></tr>
+<tr><td>Hangar: Shield Capacitor</td><td>+15 shield, 4 levels, cost 120 + 120×level</td></tr>
+<tr><td>Hangar: Weapon Tuning</td><td>+2 damage, 5 levels, cost 150 + 150×level</td></tr>
+<tr><td>Hangar: Engine Mk</td><td>+8 speed, 3 levels, cost 200 + 200×level</td></tr>
+<tr><td>Ships</td><td>Explorer 300 · Fighter 600 · Flagship 1&nbsp;200. Stats below.</td></tr>
+<tr><td>Perf</td><td>60 target / 30 floor / ≤ 200 draw calls / ≤ 8 lights / ≤ 1&nbsp;500 particles / 200 projectile pool / DPR ≤ 2 / Δt ≤ 0.1 s / ≤ 15 MB growth per 5 min</td></tr>
+<tr><td>Pools</td><td>projectiles 200 (60 player / 140 enemy), particles 1&nbsp;500, damage numbers 64, pickups 256</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>Ships</h4>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Ship</th><th class="num">Price</th><th>Damage</th><th>Speed</th><th>Shield</th><th>Loot</th><th>Pickup</th><th>Spawn malus</th><th>Boost charges</th><th>Reflect</th><th>Scale</th></tr></thead>
+<tbody>
+<tr><td>Explorer</td><td class="num">300</td><td>×2</td><td>×3.5</td><td>×1</td><td>×1</td><td>×1</td><td>×2</td><td>2</td><td>0</td><td>1.0</td></tr>
+<tr><td>Fighter</td><td class="num">600</td><td>×2</td><td>×1.5</td><td>×1.5</td><td>×2</td><td>×1</td><td>×2</td><td>1</td><td>0</td><td>1.3</td></tr>
+<tr><td>Flagship</td><td class="num">1200</td><td>×3</td><td>×3</td><td>×1.5</td><td>×1</td><td>×2</td><td>×3</td><td>1</td><td>0.5</td><td>1.7</td></tr>
+</tbody>
+</table>
+</div>
+<p class="sub">Colors: Explorer <code>#ff3b30</code>, Fighter <code>#4a90d9</code>, Flagship <code>#fbbf24</code>.
+The spawn malus multiplies enemy groups in newly loaded chunks. Reflect is the fraction of received
+damage returned to the attacker. The starter hull is not in this table; it is the §4.5 base with no
+multiplier.</p>
+
+<h4>Camera &amp; steering (implementer detail)</h4>
+<ul>
+<li>Chase offset (0, 3.2, −9), lerp 8/s, FOV 72° at zero throttle to 95° at full, +4° while boosting.
+The engine nose is −Z: the offset is applied negated along the nose so the camera trails it.</li>
+<li>Self-centering virtual stick (D12): pointer deltas accumulate into a pull offset (±90° of command
+at 0.0044 rad/px); turn rate = deflection fraction × 3.2 rad/s on local axes; 2 s without input eases
+the stick home at 2.6 rad/s to neutral — the ship then holds heading. A HUD dot mirrors the stick.</li>
+<li>Turret mode: camera lift 6 u, distance 18 u, aim point 400 u, aim smoothing 6/s.</li>
+<li>Free-look (middle mouse): 0.0032 rad/px, pitch clamped to 1.2 rad, returns at 4/s.</li>
+<li>Throttle step 0.12 per wheel notch, ease 3/s, brake 1.6/s at full down. Roll 2.8 rad/s.</li>
+</ul>
+
+<h3 id="s4-6">4.6 Enemy roster</h3>
+<p>Nine types. Sector is the first content sector they appear in. Stats below are pre-scale; apply
+§4.5 sector scaling. Every type has a named tell.</p>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Enemy</th><th>Sector</th><th class="num">HP</th><th class="num">Dmg</th><th class="num">Speed</th><th>Behavior &amp; tell</th></tr></thead>
+<tbody>
+<tr><td>Drone</td><td>1</td><td class="num">15</td><td class="num">5</td><td class="num">60</td><td>Seek contact, swarms of 4–6. Tight pack, no telegraph beyond the swarm itself.</td></tr>
+<tr><td>Interceptor</td><td>1</td><td class="num">40</td><td class="num">12</td><td class="num">55</td><td>Orbit at 250 u, 1.5 shots/s. Muzzle flash before each shot.</td></tr>
+<tr><td>Rammer</td><td>2</td><td class="num">25</td><td class="num">25</td><td class="num">90</td><td>Charge and detonate inside 5 u, blast 20 u. Engine flare spikes on the commit.</td></tr>
+<tr><td>Frigate</td><td>3</td><td class="num">150</td><td class="num">20</td><td class="num">8</td><td>Stationary turret, radius 8 u, 0.8 shots/s. Barrel tracks, then fires.</td></tr>
+<tr><td>Sniper</td><td>4</td><td class="num">35</td><td class="num">30</td><td class="num">45</td><td>Cloaks to 15% opacity beyond 600 u. 0.8 s beam telegraph, fires every 4 s.</td></tr>
+<tr><td>Sentinel</td><td>exit</td><td class="num">400</td><td class="num">25</td><td class="num">35</td><td>Mini-boss at each sector exit. +400 HP per sector already cleared. Spread burst, summons 4 drones. Guaranteed rare drop.</td></tr>
+<tr><td>Golden drone</td><td>1</td><td class="num">200</td><td class="num">0</td><td class="num">120</td><td>Flees. Bounty 250 scrap into the purse, not the bank. Exotic-weight beacon.</td></tr>
+<tr><td>Chrome Sentinel</td><td>7</td><td class="num">90</td><td class="num">18</td><td class="num">130</td><td>Fleets of 5, strafe at 180 u, 2.2 shots/s, weave 2.5 rad/s. Wing formation is the tell.</td></tr>
+<tr><td>Warden</td><td>6</td><td class="num">3000</td><td class="num">40</td><td class="num">30</td><td>Finale. Core radius 10 u, 3 armor rings, 2 emitter cones. Keeps 200 u. Barrage: 3-shot volley every 1.2 s at 320 u/s. Minefield phase summons every 8 s plus an 8-shot radial burst. Enrage: beams, 15 dps inside 12 u of the axis, length 220 u, sweep 1.1 rad/s.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s4-7">4.7 Sector ladder &amp; hazards</h3>
+<p>Distance in world units from the sun. <code>mult</code> is the enemy scale for that band. Voids reuse
+the neighboring content sector's multiplier and spawn almost nothing (§4.5).</p>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Sector</th><th class="num">Start</th><th class="num">End</th><th class="num">Mult</th><th>Palette</th><th>Hazard</th></tr></thead>
+<tbody>
+<tr><td>Open Space</td><td class="num">0</td><td class="num">9000</td><td class="num">1.0</td><td>blue-grey</td><td>none beyond drones and interceptors</td></tr>
+<tr><td>Void</td><td class="num">9000</td><td class="num">12000</td><td class="num">1.0</td><td>near-black</td><td>empty travel</td></tr>
+<tr><td>Asteroid Belt</td><td class="num">12000</td><td class="num">24000</td><td class="num">1.2</td><td>rust-orange</td><td>rammers; alloy is locally cheap</td></tr>
+<tr><td>Void</td><td class="num">24000</td><td class="num">28500</td><td class="num">1.2</td><td>near-black</td><td>empty travel</td></tr>
+<tr><td>Crystal Fields</td><td class="num">28500</td><td class="num">42000</td><td class="num">1.5</td><td>cyan-magenta</td><td>crystal clusters, 4–8, 20 HP, shatter for shards</td></tr>
+<tr><td>Void</td><td class="num">42000</td><td class="num">48000</td><td class="num">1.5</td><td>near-black</td><td>empty travel</td></tr>
+<tr><td>Plasma Storm</td><td class="num">48000</td><td class="num">63000</td><td class="num">2.0</td><td>teal</td><td>pulsar beams 500 u / 25 dmg / 6 u radius; mines 3–6, trigger 15 u, 30 dmg; storm clouds 3–5, bolt 20 dmg after a 0.5 s brightening tell, radius 30 u</td></tr>
+<tr><td>Void</td><td class="num">63000</td><td class="num">70500</td><td class="num">2.0</td><td>near-black</td><td>empty travel</td></tr>
+<tr><td>Derelict Graveyard</td><td class="num">70500</td><td class="num">85500</td><td class="num">2.5</td><td>amber</td><td>snipers; wrecks</td></tr>
+<tr><td>Void</td><td class="num">85500</td><td class="num">94500</td><td class="num">2.5</td><td>near-black</td><td>empty travel</td></tr>
+<tr><td>THE FORGE</td><td class="num">94500</td><td class="num">120000</td><td class="num">3.0</td><td>red-gold</td><td>Warden arena at 96&nbsp;000 u. Structure collision 20 dmg, radius 30 u</td></tr>
+<tr><td>THE ABYSS</td><td class="num">120000</td><td class="num">150000</td><td class="num">3.5</td><td>void-purple</td><td>1–3 black holes per chunk. Horizon 14 u, 60 dps inside. Pull 90&nbsp;000, reach 1&nbsp;400 u, accel clamped at 120 u/s². Chrome fleets.</td></tr>
+<tr><td>DEAD STAR REACH</td><td class="num">150000</td><td class="num">190000</td><td class="num">4.0</td><td>dead-star</td><td>30% chance of a death star per chunk. Hull radius 90 u, cruise 12 u/s, boost 60, turn thrust 40. Hangar spawns 3 ships every 6 s, cap 9. Lasers 22 dmg, 520 u/s, every 2.8 s, range 900 u.</td></tr>
+<tr><td>SHIP GRAVEYARD</td><td class="num">190000</td><td class="num">230000</td><td class="num">4.5</td><td>bone-rot</td><td>4–8 hulks per chunk. 1–2 worms: 10 segments at 7 u, 85 u/s, bite 25, aggro 600 u, despawn 3&nbsp;000 u.</td></tr>
+<tr><td>THE END</td><td class="num">230000</td><td class="num">∞</td><td class="num">1.0</td><td>the-end</td><td>4 hull/s drain after 8 s grace. Leave or die.</td></tr>
+</tbody>
+</table>
+</div>
+
+<hr>
+
+<h2 id="part5">Part V — Decisions &amp; risk</h2>
+
+<h3 id="s5-1">5.1 Decision log</h3>
+<p>Locked. Overturning one is a spec change, recorded here with the old and new number.</p>
+<div class="t-scroll">
+<table>
+<thead><tr><th>#</th><th>Decision</th><th>Rejected</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>D1</td><td>No auto-sell, not even as an option</td><td>a toggle; auto-sell above a value</td><td>Any automatic liquidation path removes the hold decision. A toggle hides the contradiction in a setting nobody reads.</td></tr>
+<tr><td>D2</td><td>Buffs from fitted bays only</td><td>buffs from carried cargo</td><td>Carried-cargo buffs make selling a loss of power, which kills selling. Power is purchases and upgrades. Goods are goods.</td></tr>
+<tr><td>D3</td><td>Authored demand tables, plus a small seeded drift</td><td>fully random prices; supply that reacts to the player</td><td>Authored demand makes routes learnable. Noise without structure is a fixed spread with dice. Player-driven supply is a later idea (R4).</td></tr>
+<tr><td>D4</td><td>Unbanked purse, separate from credits</td><td>one currency, scrap becomes credits on pickup</td><td>The death penalty needs a currency that can die with you. Scrap is loot you cannot spend until you dock.</td></tr>
+<tr><td>D5</td><td>Contracts multiply the destination board</td><td>flat credit rewards</td><td>One formula, no parallel inflation. Contract value scales with how good the route already is.</td></tr>
+<tr><td>D6</td><td>Reputation is lifetime banked, never spent</td><td>reputation tokens you spend</td><td>A spent rank competes with credits. Credits are already the spend layer. Rank means the network remembers you.</td></tr>
+<tr><td>D7</td><td>Contraband, and two brands that refuse it</td><td>every station buys everything</td><td>Without refusal, brand choice has no texture. The rule is one column in §4.1.</td></tr>
+<tr><td>D8</td><td>Cosmetics spend the same credits; some are tier-gated</td><td>a premium currency; loot-box cosmetics</td><td>Credits have to mean something. Power versus flex is the last decision. No gambling.</td></tr>
+<tr><td>D9</td><td>Combat and world numbers are frozen in §4.5–§4.7</td><td>rebalance everything alongside the economy</td><td>The risk surface stays on trade and presentation. A combat regression is then unambiguous.</td></tr>
+<tr><td>D10</td><td>Base hold is 40, not 50</td><td>keep a 50-slot hold</td><td>40 makes the first Cargo Pods level (55) a felt jump, and a full hold arrives inside one Belt sweep. The upgrade shape (+15 × 3) is unchanged.</td></tr>
+<tr><td>D11</td><td>Zero external assets</td><td>downloaded models or audio</td><td>The game ships as source plus this spec. Procedural meshes, runtime textures, synthesized audio.</td></tr>
+<tr><td>D12</td><td>REBALANCE: aim becomes a self-centering virtual stick (TURN_RATE 2.4 → 3.2 rad/s; §1.2 cursor-follow replaced). 2 s without mouse input eases the rudder to neutral; hold turns continuously.</td><td>keep §1.2 cursor-follow at 2.4 rad/s</td><td>Pointer-lock deltas pinned at the screen edge: the ship could not turn past roughly one screen width, unreadable in fights. A rate-stick that self-centers keeps hands on keys, gives unlimited sustained turn, and re-centers for straight flight. Old number: 2.4 rad/s toward cursor, damped below 0.12 rad.</td></tr>
+<tr><td>D13</td><td>P pause menu reuses the terminal's sim-halt semantics</td><td>real-time overlay; separate pause clock</td><td>One pause is easier to reason about than two. Time freezes exactly as under the trade terminal, verified frozen and resumed by gate; the menu never stacks with the terminal or the death screen (auto-dismiss). Decor and sun parking keep updating so the frozen frame stays correct. The menu carries the indicator snapshot and the full key map.</td></tr>
+<tr><td>D14</td><td>All screen finisher effects live in one combined pass (grain, vignette, radial chromatic aberration, boost speed lines, hurt flash)</td><td>one pass per effect, chained</td><td>Frame cost stays one full-screen quad no matter how many look effects ship. Chromatic aberration is radial — zero at the crosshair so aim stays sharp — and heats with fire and boost. Tier 0 skips the whole pass, keeping the software-GL floor cheap. Glow sprites (engine, muzzle, sparks, sun halo) feed the existing bloom instead of adding lights; §4.5's 8-light ceiling untouched.</td></tr>
+<tr><td>D15</td><td>REBALANCE: playability pass — stick sensitivity halved (RETICLE_SENS 0.0044 → 0.0022) plus a 1.6 deflection curve; station chance per content chunk 0.0025 → 0.02 (Voids 0.006); enemies render 1.6× their collision radius with per-type emissive signature colors; breakable crates spawn 2–4 per content chunk (the §1.3 Breakables module, previously unimplemented); boost speed lines lose their tunnel vignette. Biome decor fields (rock/shard/panel, per-instance palette colors) replace the single grey gravel field.</td><td>keep frozen numbers</td><td>Frozen numbers met real hands: 0.0044 rad/px was undrivable (full stick in 40 px of mouse); 0.25% station chance meant one station per playthrough; 1.2 u hulls on near-black space were invisible at range; crates and breakables promised in §1.3/§2.5 were never generated; the tunnel vignette on boost read as too much. Sector palettes existed only as a background tint — the decor field now carries them. Old numbers: RETICLE_SENS 0.0044 linear; STATION_CHANCE 0.0025 content-only; drone mesh = collision radius, shared grey.</td></tr>
+<tr><td>D16</td><td>Trade terminal split into four explicit panels (SELL / BUY / EQUIP / SHIP) with row tooltips and a quantity selector; hangar upgrades made purchasable (upgrades.js — the stats() counters existed but nothing sold them); opening the terminal releases pointer lock and states "press ESC to free the mouse cursor"; every station gets a security shield dome whose radius is the H-interaction constant (STATION_BUBBLE) — inside it hostiles ignore the ship (safe zone), the prompt reads SHIELD SAFE and the reticle goes cyan.</td><td>keep the single mega panel; no safe zone</td><td>One tabbed grid hid half the game: players could not tell where to sell versus buy, found no upgrade path, and did not notice the mouse was captured. The station bubble existed only as an invisible trigger — making it a visible shield turned a hidden predicate into a readable contract: dock inside the dome, nothing touches you. Shield radius and interaction radius share one constant so they can never drift apart.</td></tr>
+<tr><td>D17</td><td>Graphic rehearsal: pulse bolts become fat glowing capsules with additive halo sprites (all pooled); missiles become cone darts with per-frame exhaust trails and detonation shockwave rings; the IEM cast fires a double shockwave sized to the true IEM_RADIUS; a HUD contact ring tracks hostiles, breakables and loot with the same projection + edge-clamp treatment as the station nav marks.</td><td>keep thin 0.18 u bolts; FX only on kills</td><td>Measured, not guessed: a framed readPixels probe showed a missile salvo lit 6 pixels of a 400² crop and an IEM cast changed nothing visible — 0.18 u spheres at 60 u are sub-pixel against near-black space. Every projectile now carries a halo (light emission per §1.11 juice), FX rigs are pooled and idle-free, and the contact ring answers "what is around me" at a glance, which the reticle threat color alone could not.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s5-2">5.2 Risks</h3>
+<div class="t-scroll">
+<table>
+<thead><tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr></thead>
+<tbody>
+<tr><td>Trade feels like a spreadsheet at 40 slots</td><td>High — the loop misfires</td><td>The terminal does the arithmetic: held rows pinned, a sell-all-profitable chip, a receipt preview. Contracts give a direction. P8's scripted first trip teaches the terminal in about 90 s.</td></tr>
+<tr><td>Economy too rich, combat becomes optional</td><td>Medium</td><td><code>routes-bounded</code> at 3.2×, the spawn guard in §2.3, module price floors. Read the eco report every phase.</td></tr>
+<tr><td>Full-hold trips become chores across 230&nbsp;000 u</td><td>Medium</td><td>Station density is part of the ladder. Warp Injector and boost exist. Value per slot is tuned so a short early trip still pays.</td></tr>
+<tr><td>The terminal grows into an application</td><td>Medium</td><td>§2.4 fixes the four zones. Anything else is after 1.0. The P3 gate is the smoke path, not a wish list.</td></tr>
+<tr><td>Post and terminal 3D blow the frame budget</td><td>Medium</td><td>§3.3 lands with P0. Quality tiers. The terminal is DOM and pauses the sim. Perf is measured, not assumed.</td></tr>
+<tr><td>Players do not trust refit, because a hidden consume is easy to ship by accident</td><td>Low</td><td>Receipts on every transaction, the <code>module-account</code> gate, and a hangar line: nothing is consumed by swapping.</td></tr>
+<tr><td>R4 — player-driven supply and demand</td><td>Low, later</td><td>Explicitly out of 1.0. Authored tables stay the price of record until a future spec says otherwise.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="s5-3">5.3 Glossary</h3>
+<ul>
+<li><strong>Hold</strong> — the run's cargo manifest, in slots. Dies with you.</li>
+<li><strong>Purse</strong> — unbanked field scrap, inside the hold. Dies with you.</li>
+<li><strong>Credits</strong> — the persistent wallet. Only exists after banking.</li>
+<li><strong>Board</strong> — a station's live buy/sell grid, from §2.3.</li>
+<li><strong>Route</strong> — a commodity plus an origin and a destination that nets profit after the spread.</li>
+<li><strong>Brand</strong> — Reliance, Kestrel, or Midnight.</li>
+<li><strong>Bay</strong> — one of three module slots on the ship. The only source of item power.</li>
+<li><strong>Warehouse</strong> — banked modules. No passive effect, ever.</li>
+<li><strong>Knowledge</strong> — discovered prices. Survives death.</li>
+<li><strong>Contraband</strong> — a commodity tag only Midnight will buy.</li>
+<li><strong>Livery</strong> — a paint-zone cosmetic: hull, trim, glow, and a pattern.</li>
+<li><strong>Ladder</strong> — monotonic distance from the sun through the sectors in §4.7.</li>
+</ul>
+
+<h3 id="s5-4">5.4 Sharing this spec</h3>
+<div class="box acc">
+<p>This file is the whole design. It has no external images, fonts, scripts, or links. Open it in any
+browser, offline. Building the game requires Node ≥ 20 and the two dependencies named in §1.1 —
+nothing from this document's author, and no other repository.</p>
+</div>
+<p>Out of scope, so nobody has to guess: multiplayer, a physics engine, mobile, quests beyond the
+contract board, downloaded assets, player-driven supply and demand, and any currency besides credits.</p>
+
+<footer>
+VOID CARTEL spec v1.2 · closed, no TBDs. Single-player space trade and combat in Three.js.
+This document is the source of truth for the game: physical cargo, sector price boards, contracts,
+reputation, three station brands, and the visual pass. Combat, world, and hangar numbers are frozen
+in §4.5–§4.7.
+</footer>
+
+</main>
+</div>
+
+<script>
+const links=[...document.querySelectorAll('nav a')];
+const secs=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){
+  links.forEach(l=>l.classList.remove('on'));
+  const a=links.find(l=>l.getAttribute('href')==='#'+e.target.id);
+  if(a)a.classList.add('on');}});},{rootMargin:'-20% 0px -70% 0px'});
+secs.forEach(s=>io.observe(s));
+function mark(){
+  const y=window.scrollY+window.innerHeight*0.28;
+  let cur=secs[0];
+  for(const s of secs){ if(s.offsetTop<=y) cur=s; }
+  links.forEach(l=>l.classList.remove('on'));
+  const a=links.find(l=>l.getAttribute('href')==='#'+cur.id);
+  if(a)a.classList.add('on');
+}
+mark();
+window.addEventListener('scroll',mark,{passive:true});
+</script>
+</body>
+</html>
